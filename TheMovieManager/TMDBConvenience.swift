@@ -29,11 +29,35 @@ extension TMDBClient {
         self.getRequestToken() { (success, requestToken, errorString) in
             
             if success {
-                println("requestToken: \(requestToken)")
-                self.loginWithToken(requestToken, hostViewController: hostViewController) {
-                    (success, errorString) in
+                
+                self.loginWithToken(requestToken, hostViewController: hostViewController) { (success, errorString) in
+                    
                     if success {
-                        println("You did it! We have finshed authenticating through the website!)")
+                        
+                        self.getSessionID(requestToken) { (success, sessionID, errorString) in
+                            
+                            if success {
+                                
+                                /* Success! We have the sessionID! */
+                                self.sessionID = sessionID
+                                
+                                self.getUserID() { (success, userID, errorString) in
+                                    
+                                    if success {
+                                        
+                                        if let userID = userID {
+                                            
+                                            /* And the userID 😄! */
+                                            self.userID = userID
+                                        }
+                                    }
+                                    
+                                    completionHandler(success: success, errorString: errorString)
+                                }
+                            } else {
+                                completionHandler(success: success, errorString: errorString)
+                            }
+                        }
                     } else {
                         completionHandler(success: success, errorString: errorString)
                     }
@@ -52,7 +76,7 @@ extension TMDBClient {
         /* 2. Make the request */
         taskForGETMethod(Methods.AuthenticationTokenNew, parameters: parameters) { JSONResult, error in
             
-        /* 3. Send the desired value(s) to completion handler */
+            /* 3. Send the desired value(s) to completion handler */
             if let error = error {
                 completionHandler(success: false, requestToken: nil, errorString: "Login Failed (Request Token).")
             } else {
@@ -63,29 +87,42 @@ extension TMDBClient {
                 }
             }
         }
-        
     }
     
-    // TODO: Make the following methods into convenience functions!
+    /* This function opens a TMDBAuthViewController to handle Step 2a of the auth flow */
+    func loginWithToken(requestToken: String?, hostViewController: UIViewController, completionHandler: (success: Bool, errorString: String?) -> Void) {
+        
+        let authorizationURL = NSURL(string: "\(TMDBClient.Constants.AuthorizationURL)\(requestToken!)")
+        let request = NSURLRequest(URL: authorizationURL!)
+        let webAuthViewController = hostViewController.storyboard!.instantiateViewControllerWithIdentifier("TMDBAuthViewController") as! TMDBAuthViewController
+        webAuthViewController.urlRequest = request
+        webAuthViewController.requestToken = requestToken
+        webAuthViewController.completionHandler = completionHandler
+        
+        let webAuthNavigationController = UINavigationController()
+        webAuthNavigationController.pushViewController(webAuthViewController, animated: false)
+        
+        dispatch_async(dispatch_get_main_queue(), {
+            hostViewController.presentViewController(webAuthNavigationController, animated: true, completion: nil)
+        })
+    }
     
-        /* This function opens a TMDBAuthViewController to handle Step 2a of the auth flow */
-        func loginWithToken(requestToken: String?, hostViewController: UIViewController, completionHandler: (success: Bool, errorString: String?) -> Void) {
+    func getSessionID(requestToken: String?, completionHandler: (success: Bool, sessionID: String?, errorString: String?) -> Void) {
+        
+        /* 1. Specify parameters, method (if has {key}), and HTTP body (if POST) */
+        /* 2. Make the request */
+        /* 3. Send the desired value(s) to completion handler */
+        println("implement me: TMDBClient getSessionID")
+    }
     
-            let authorizationURL = NSURL(string: "\(TMDBClient.Constants.AuthorizationURL)\(requestToken!)")
-            let request = NSURLRequest(URL: authorizationURL!)
-            let webAuthViewController = hostViewController.storyboard!.instantiateViewControllerWithIdentifier("TMDBAuthViewController") as! TMDBAuthViewController
-            webAuthViewController.urlRequest = request
-            webAuthViewController.requestToken = requestToken
-            webAuthViewController.completionHandler = completionHandler
+    func getUserID(completionHandler: (success: Bool, userID: Int?, errorString: String?) -> Void) {
+        
+        /* 1. Specify parameters, method (if has {key}), and HTTP body (if POST) */
+        /* 2. Make the request */
+        /* 3. Send the desired value(s) to completion handler */
+        println("implement me: TMDBClient getUserID")
+    }
     
-            let webAuthNavigationController = UINavigationController()
-            webAuthNavigationController.pushViewController(webAuthViewController, animated: false)
-    
-            dispatch_async(dispatch_get_main_queue(), {
-                hostViewController.presentViewController(webAuthNavigationController, animated: true, completion: nil)
-            })
-        }
-    //
     //    func getSessionID(requestToken: String) {
     //
     //        /* 1. Set the parameters */
@@ -178,7 +215,7 @@ extension TMDBClient {
     //                }
     //            }
     //        }
-    //        
+    //
     //        /* 7. Start the request */
     //        task.resume()
     //    }
