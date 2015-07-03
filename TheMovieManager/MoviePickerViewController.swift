@@ -69,8 +69,16 @@ class MoviePickerViewController: UIViewController, UITableViewDelegate, UITableV
             return
         }
         
-        // TODO: Search for movies by the searchText, then update the table */
-        
+        /* New search */
+        searchTask = TMDBClient.sharedInstance().getMoviesForSearchString(searchText, completionHandler: { (movies, error) -> Void in
+            self.searchTask = nil
+            if let movies = movies {
+                self.movies = movies
+                dispatch_async(dispatch_get_main_queue()) {
+                    self.self.movieTableView!.reloadData()
+                }
+            }
+        })
     }
     
     func searchBarSearchButtonClicked(searchBar: UISearchBar) {
@@ -85,10 +93,10 @@ class MoviePickerViewController: UIViewController, UITableViewDelegate, UITableV
         let movie = movies[indexPath.row]
         let cell = tableView.dequeueReusableCellWithIdentifier(CellReuseId) as! UITableViewCell
         
-        if count(movie.releaseYear!) == 0 {
-            cell.textLabel!.text = "\(movie.title)"
+        if let releaseYear = movie.releaseYear {
+            cell.textLabel!.text = "\(movie.title) (\(releaseYear))"
         } else {
-            cell.textLabel!.text = "\(movie.title) (\(movie.releaseYear!))"
+            cell.textLabel!.text = "\(movie.title)"
         }
         
         return cell
